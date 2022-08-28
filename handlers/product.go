@@ -29,9 +29,10 @@ func (p *Product) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPut {
 		//expect the id in the URL
-		r := regexp.MustCompile(`/[0-9]+`)
 
-		// p := r.URL.Path
+		reg := regexp.MustCompile(`/[0-9]+`)
+		reg.FindAllStringSubmatch(r.URL.Path)
+
 	}
 
 	//else catch all
