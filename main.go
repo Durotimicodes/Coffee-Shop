@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
 
 func main() {
 
