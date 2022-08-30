@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,13 +29,9 @@ func (p *Product) GetProducts(rw http.ResponseWriter, r *http.Request) {
 func (p *Product) AddProduct(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle POST product!")
 
-	prod := &data.Product{}
-	err := prod.FromJSON(r.Body)
-	if err != nil {
-		http.Error(rw, "unable to unmarshal message", http.StatusBadRequest)
-	}
+	prod := r.Context().Value(KeyProduct{}).(data.Product)
 
-	data.AddProduct(prod)
+	data.AddProduct(&prod)
 }
 
 func (p *Product) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
@@ -46,8 +43,9 @@ func (p *Product) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.l.Println("Handle PUT request", id)
+	prod := r.Context().Value(KeyProduct{}).(data.Product)
 
-	err = data.UpdateProduct(id, prod)
+	err = data.UpdateProduct(id, &prod)
 	if err == data.ErrProductNotFound {
 		http.Error(rw, "Product not found", http.StatusBadRequest)
 		return
@@ -62,19 +60,33 @@ func (p *Product) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 type KeyProduct struct{}
 
 func (p *Product) MiddlewareProductValidation(next http.Handler) http.Handler {
-	return http.HandlerFunc(rw http.ResponseWriter, r *http.Request){
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request){
 		prod := &data.Product{}
 
 	//decode the product from JSON, if not return an error message
-		err = prod.FromJSON(r.Body)
+		err := prod.FromJSON(r.Body)
 			if err != nil {
-			http.Error(rw, "Unable to unmarshal json body", http.StatusBadRequest)
+			p.l.Println("[Error in deserilizing product]", err)
+			http.Error(rw, "Error reading product", http.StatusBadRequest)
 			return
 		}
 
+		//validate the product
+		err = prod.Validate()
+		if err != nil {
+			p.l.Println("[Error in validating product]", err)
+			http.Error(
+				rw,
+				fmt.Sprintf("Error validating product %s", err),
+				http.StatusBadRequest,
+			)
+			return
+		}
+
+		//add prodcut to the context
 		ctx := r.Context().WithValue(KeyProduct{}, prod)
 		req := r.WithContext(ctx)
 
-		next.ServeHTTP(rw, re)
-	}
+		next.ServeHTTP(rw, req)
+	})
 }
