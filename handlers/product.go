@@ -3,7 +3,6 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"regexp"
 
 	"github.com/durotimicodes/microservices/product-api/data"
 )
@@ -16,30 +15,7 @@ func NewProduct(l *log.Logger) *Product {
 	return &Product{l}
 }
 
-func (p *Product) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		p.getProducts(rw, r)
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		p.addProduct(rw, r)
-		return
-	}
-
-	if r.Method == http.MethodPut {
-		//expect the id in the URL
-
-		reg := regexp.MustCompile(`/[0-9]+`)
-		reg.FindAllStringSubmatch(r.URL.Path)
-
-	}
-
-	//else catch all
-	rw.WriteHeader(http.StatusMethodNotAllowed)
-}
-
-func (p *Product) getProducts(rw http.ResponseWriter, r *http.Request) {
+func (p *Product) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	lp := data.GetProducts()
 	err := lp.TOJSON(rw)
 	if err != nil {
@@ -47,7 +23,7 @@ func (p *Product) getProducts(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *Product) addProduct(rw http.ResponseWriter, r *http.Request) {
+func (p *Product) AddProduct(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle POST product!")
 
 	prod := &data.Product{}
@@ -57,4 +33,10 @@ func (p *Product) addProduct(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	data.AddProduct(prod)
+}
+
+func (p *Product) UpdateProduct(rw http.ResponseWriter, r *http.Request) {
+	p.l.Println("Handle PUT request")
+
+	prod := &data.Products{}
 }

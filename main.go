@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/durotimicodes/microservices/handlers"
+	"github.com/gorilla/mux"
 )
 
 // var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
@@ -21,14 +22,21 @@ func main() {
 	ph := handlers.NewProduct(l)
 
 	//define a new serve mux and register the new handler into it
-	sm := http.NewServeMux()
-	sm.Handle("/", ph)
+	sm := mux.NewRouter()
+
+	//router for Get request
+	getRouter := sm.Methods("GET").Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	//router for put request
+	putRouter := sm.Methods("PUT").Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProduct)
 
 	/*in order to prevent blocked connections due to clients interruption set a timeout by creating
 	a server */
 	//create a new server
 	s := &http.Server{
-		Addr:         ":9090",           //configure the bind address
+		Addr:         ":9091",           //configure the bind address
 		Handler:      sm,                //set the deafult handler
 		ErrorLog:     l,                 //set the logger for the server
 		IdleTimeout:  120 * time.Second, // max time for connection using TCP keep-alive
@@ -42,7 +50,7 @@ func main() {
 		//since this will block, put it in a goroutine
 		err := s.ListenAndServe()
 		if err != nil {
-			log.Printf("Error is tarting server %s\n", err)
+			log.Printf("Error is starting server %s\n", err)
 			os.Exit(1)
 		}
 	}()
