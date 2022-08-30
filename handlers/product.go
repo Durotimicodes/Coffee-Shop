@@ -3,8 +3,10 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/durotimicodes/microservices/product-api/data"
+	"github.com/gorilla/mux"
 )
 
 type Product struct {
@@ -35,8 +37,44 @@ func (p *Product) AddProduct(rw http.ResponseWriter, r *http.Request) {
 	data.AddProduct(prod)
 }
 
-func (p *Product) UpdateProduct(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("Handle PUT request")
+func (p *Product) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 
-	prod := &data.Products{}
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(rw, "Unable to convert the id to integer", http.StatusBadRequest)
+		return
+	}
+	p.l.Println("Handle PUT request", id)
+
+	err = data.UpdateProduct(id, prod)
+	if err == data.ErrProductNotFound {
+		http.Error(rw, "Product not found", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(rw, "Product not found", http.StatusInternalServerError)
+	}
+}
+
+
+type KeyProduct struct{}
+
+func (p *Product) MiddlewareProductValidation(next http.Handler) http.Handler {
+	return http.HandlerFunc(rw http.ResponseWriter, r *http.Request){
+		prod := &data.Product{}
+
+	//decode the product from JSON, if not return an error message
+		err = prod.FromJSON(r.Body)
+			if err != nil {
+			http.Error(rw, "Unable to unmarshal json body", http.StatusBadRequest)
+			return
+		}
+
+		ctx := r.Context().WithValue(KeyProduct{}, prod)
+		req := r.WithContext(ctx)
+
+		next.ServeHTTP(rw, re)
+	}
 }

@@ -25,12 +25,18 @@ func main() {
 	sm := mux.NewRouter()
 
 	//router for Get request
-	getRouter := sm.Methods("GET").Subrouter()
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/", ph.GetProducts)
 
 	//router for put request
-	putRouter := sm.Methods("PUT").Subrouter()
-	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProduct)
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareProductValidation)
+
+	//route for post request
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/addproduct", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareProductValidation)
 
 	/*in order to prevent blocked connections due to clients interruption set a timeout by creating
 	a server */
